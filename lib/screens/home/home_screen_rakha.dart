@@ -292,7 +292,7 @@ class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
                           color: Colors.orange[50],
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: Colors.orange[200],
+                            color: Colors.orange[200]!,
                             width: 1,
                           ),
                         ),

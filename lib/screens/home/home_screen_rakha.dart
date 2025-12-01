@@ -1,42 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/booking_provider.dart';
 import '../../models/movie_model_all_febriyan.dart';
-import 'movie_detail_screen_rakha.dart';
-
-// Data dummy movie untuk sementara
-List<MovieModel_Febriyan> dummyMovies_Rakha = [
-  MovieModel_Febriyan(
-    movie_id: "1",
-    title: "Avatar",
-    posterior1: "https://via.placeholder.com/300x450/007BFF/FFFFFF?text=Avatar",
-    base_price: 35000,
-    rating: 4.5,
-    duration: 162,
-  ),
-  MovieModel_Febriyan(
-    movie_id: "2",
-    title: "Spider-Man: No Way Home",
-    posterior1: "https://via.placeholder.com/300x450/DC3545/FFFFFF?text=Spider-Man",
-    base_price: 40000,
-    rating: 4.8,
-    duration: 148,
-  ),
-  MovieModel_Febriyan(
-    movie_id: "3",
-    title: "Titanic",
-    posterior1: "https://via.placeholder.com/300x450/28A745/FFFFFF?text=Titanic",
-    base_price: 30000,
-    rating: 4.7,
-    duration: 195,
-  ),
-  MovieModel_Febriyan(
-    movie_id: "4",
-    title: "The Avengers: Endgame",
-    posterior1: "https://via.placeholder.com/300x450/FF6B6B/FFFFFF?text=Avengers",
-    base_price: 45000,
-    rating: 4.9,
-    duration: 181,
-  ),
-];
+import '../home/movie_detail_screen_rakha.dart';
 
 class HomeScreen_Rakha extends StatefulWidget {
   @override
@@ -44,6 +10,42 @@ class HomeScreen_Rakha extends StatefulWidget {
 }
 
 class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
+  // Data dummy movie untuk sementara (jika Firebase belum siap)
+  List<MovieModel_Febriyan> dummyMovies_Rakha = [
+    MovieModel_Febriyan(
+      movie_id: "1",
+      title: "Avatar",
+      posterior1: "https://via.placeholder.com/300x450/007BFF/FFFFFF?text=Avatar",
+      base_price: 35000,
+      rating: 4.5,
+      duration: 162,
+    ),
+    MovieModel_Febriyan(
+      movie_id: "2",
+      title: "Spider-Man: No Way Home",
+      posterior1: "https://via.placeholder.com/300x450/DC3545/FFFFFF?text=Spider-Man",
+      base_price: 40000,
+      rating: 4.8,
+      duration: 148,
+    ),
+    MovieModel_Febriyan(
+      movie_id: "3",
+      title: "Titanic",
+      posterior1: "https://via.placeholder.com/300x450/28A745/FFFFFF?text=Titanic",
+      base_price: 30000,
+      rating: 4.7,
+      duration: 195,
+    ),
+    MovieModel_Febriyan(
+      movie_id: "4",
+      title: "The Avengers: Endgame",
+      posterior1: "https://via.placeholder.com/300x450/FF6B6B/FFFFFF?text=Avengers",
+      base_price: 45000,
+      rating: 4.9,
+      duration: 181,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,7 +70,8 @@ class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
           IconButton(
             icon: Icon(Icons.person, color: Colors.white),
             onPressed: () {
-              // Navigate to profile screen
+              // Navigate to profile screen menggunakan named route
+              Navigator.pushNamed(context, '/profile');
             },
           ),
         ],
@@ -103,21 +106,35 @@ class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
           
           // Movies Grid
           Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: _getCrossAxisCount_Rakha(context),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.65,
-                ),
-                itemCount: dummyMovies_Rakha.length,
-                itemBuilder: (context, index) {
-                  final movie = dummyMovies_Rakha[index];
-                  return _buildMovieCard_Rakha(movie, context);
-                },
-              ),
+            child: Consumer<BookingProvider_Tio>(
+              builder: (context, bookingProvider, child) {
+                // Gunakan data dari provider jika ada, jika tidak gunakan dummy data
+                List<MovieModel_Febriyan> movies;
+                
+                // Coba ambil data dari provider terlebih dahulu
+                try {
+                  movies = bookingProvider.getDummyMovies_Tio();
+                } catch (e) {
+                  movies = dummyMovies_Rakha; // Fallback ke dummy data
+                }
+                
+                return Padding(
+                  padding: EdgeInsets.all(12),
+                  child: GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: _getCrossAxisCount_Rakha(context),
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.65,
+                    ),
+                    itemCount: movies.length,
+                    itemBuilder: (context, index) {
+                      final movie = movies[index];
+                      return _buildMovieCard_Rakha(movie, context, bookingProvider);
+                    },
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -133,7 +150,11 @@ class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
     return 1;
   }
 
-  Widget _buildMovieCard_Rakha(MovieModel_Febriyan movie, BuildContext context) {
+  Widget _buildMovieCard_Rakha(
+    MovieModel_Febriyan movie, 
+    BuildContext context,
+    BookingProvider_Tio bookingProvider
+  ) {
     return Hero(
       tag: 'movie-${movie.movie_id}',
       child: Card(
@@ -143,6 +164,10 @@ class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
         ),
         child: InkWell(
           onTap: () {
+            // Simpan movie yang dipilih ke provider (untuk logic trap)
+            bookingProvider.setSelectedMovie_Tio(movie);
+            
+            // Navigasi ke detail screen
             Navigator.push(
               context,
               MaterialPageRoute(

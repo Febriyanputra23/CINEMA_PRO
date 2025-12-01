@@ -1,3 +1,4 @@
+// Database Model Booking
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BookingModel_Febriyan {

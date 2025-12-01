@@ -140,7 +140,7 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.green[50],
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green[200]),
+                      border: Border.all(color: Colors.green[200]!),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

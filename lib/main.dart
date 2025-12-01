@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'providers/booking_provider.dart';
 import 'screens/auth/login_screen_rakha.dart';
 import 'screens/home/home_screen_rakha.dart';
 import 'screens/seat/seat_selection_screen_anisa.dart';
 import 'screens/profile/profile_screen_anisa.dart';
-import 'screens/home/movie_detail_screen_rakha.dart'; 
+import 'screens/home/movie_detail_screen_rakha.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(MyApp());
 }
 
@@ -24,6 +29,7 @@ class MyApp extends StatelessWidget {
         ),
         home: LoginScreen_Rakha(),
         routes: {
+          '/login': (context) => LoginScreen_Rakha(),
           '/home': (context) => HomeScreen_Rakha(),
           '/seat': (context) => SeatSelectionScreen_Anisa(),
           '/profile': (context) => ProfileScreen_Anisa(),

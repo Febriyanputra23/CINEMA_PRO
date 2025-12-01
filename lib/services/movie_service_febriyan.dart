@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // TAMBAH INI!
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/movie_model_all_febriyan.dart';
 import '../models/booking_model_febriyan.dart';
 import '../models/user_model_febriyan.dart';
@@ -8,7 +8,7 @@ class FirebaseService_Febriyan {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
- 
+  // ================= AUTH METHODS =================
   Future<User?> signInWithEmail_Febriyan(String email, String password) async {
     try {
       UserCredential credential = await _auth.signInWithEmailAndPassword(
@@ -17,18 +17,16 @@ class FirebaseService_Febriyan {
       );
       return credential.user;
     } catch (e) {
-      throw e.toString(); 
+      throw e.toString();
     }
   }
 
   Future<User?> registerWithEmail_Febriyan(
-
     String email,
     String password,
     String username,
   ) async {
     try {
-
       if (!email.endsWith('@student.univ.ac.id')) {
         throw 'Email must be @student.univ.ac.id';
       }
@@ -37,7 +35,6 @@ class FirebaseService_Febriyan {
         email: email,
         password: password,
       );
-
 
       await _firestore.collection('users').doc(credential.user!.uid).set({
         'uid': credential.user!.uid,
@@ -49,7 +46,7 @@ class FirebaseService_Febriyan {
 
       return credential.user;
     } catch (e) {
-      throw e.toString(); 
+      throw e.toString();
     }
   }
 
@@ -57,13 +54,16 @@ class FirebaseService_Febriyan {
     await _auth.signOut();
   }
 
-
+  // ================= MOVIE METHODS (YANG DIPERBAIKI) =================
+  
   Stream<List<MovieModel_Febriyan>> getMovies_Febriyan() {
     return _firestore.collection('movies').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
-        Map<String, dynamic> data = doc.data();
-        data['movie_id'] = doc.id; // Tambah movie_id
-        return MovieModel_Febriyan.fromMap(data);
+        // PERBAIKAN: Gunakan 2 parameter (Data + ID)
+        return MovieModel_Febriyan.fromMap(
+          doc.data() as Map<String, dynamic>, 
+          doc.id
+        );
       }).toList();
     });
   }
@@ -72,9 +72,11 @@ class FirebaseService_Febriyan {
     try {
       var doc = await _firestore.collection('movies').doc(movieId).get();
       if (doc.exists) {
-        Map<String, dynamic> data = doc.data()!;
-        data['movie_id'] = doc.id; // Tambah movie_id
-        return MovieModel_Febriyan.fromMap(data);
+        // PERBAIKAN: Gunakan 2 parameter (Data + ID)
+        return MovieModel_Febriyan.fromMap(
+          doc.data() as Map<String, dynamic>, 
+          doc.id
+        );
       } else {
         throw 'Movie not found';
       }
@@ -83,6 +85,8 @@ class FirebaseService_Febriyan {
     }
   }
 
+  // ================= BOOKING METHODS =================
+  
   Future<void> createBooking_Febriyan(BookingModel_Febriyan booking) async {
     try {
       await _firestore
@@ -102,18 +106,22 @@ class FirebaseService_Febriyan {
         .map((snapshot) {
           return snapshot.docs.map((doc) {
             Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-            data['booking_id'] = doc.id; // Tambah booking_id
+            // Note: Kalau BookingModel masih versi lama (1 parameter), baris ini benar.
+            // Kalau BookingModel diupdate juga, sesuaikan seperti MovieModel.
+            data['booking_id'] = doc.id; 
             return BookingModel_Febriyan.fromMap(data);
           }).toList();
         });
   }
+
+  // ================= USER METHODS =================
 
   Future<UserModel_Febriyan> getUserData_Febriyan(String userId) async {
     try {
       var doc = await _firestore.collection('users').doc(userId).get();
       if (doc.exists) {
         Map<String, dynamic> data = doc.data()!;
-        data['uid'] = doc.id; 
+        data['uid'] = doc.id;
         return UserModel_Febriyan.fromMap(data);
       } else {
         throw 'User not found';

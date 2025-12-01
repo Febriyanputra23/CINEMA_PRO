@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/booking_provider.dart';
+import '../seat/seat_selection_screen_anisa.dart';
 import '../../models/movie_model_all_febriyan.dart';
 
 class MovieDetailScreen_Rakha extends StatelessWidget {
@@ -69,7 +72,7 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 8),
-                  
+
                   // Rating and Duration
                   Row(
                     children: [
@@ -133,7 +136,7 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
                     ],
                   ),
                   SizedBox(height: 16),
-                  
+
                   // Price Info
                   Container(
                     padding: EdgeInsets.all(16),
@@ -166,41 +169,11 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
                             ),
                           ],
                         ),
-                        if (movie.title.length > 10)
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Additional Tax',
-                                style: TextStyle(
-                                  color: Colors.orange[700],
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Rp 2.500',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange[800],
-                                ),
-                              ),
-                              Text(
-                                '(Long Title)',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
                       ],
                     ),
                   ),
                   SizedBox(height: 20),
-                  
+
                   // Movie Description
                   Text(
                     'About the Movie',
@@ -222,7 +195,7 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 20),
-                  
+
                   // Features
                   Text(
                     'Features',
@@ -239,10 +212,13 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
                     children: [
                       _buildFeatureChip_Rakha(Icons.hd, 'HD Quality'),
                       _buildFeatureChip_Rakha(Icons.audiotrack, 'Dolby Audio'),
-                      _buildFeatureChip_Rakha(Icons.airline_seat_recline_normal, 'Comfort Seats'),
+                      _buildFeatureChip_Rakha(
+                          Icons.airline_seat_recline_normal, 'Comfort Seats'),
                       _buildFeatureChip_Rakha(Icons.local_cafe, 'Snack Bar'),
-                      _buildFeatureChip_Rakha(Icons.wheelchair_pickup, 'Accessible'),
-                      _buildFeatureChip_Rakha(Icons.family_restroom, 'Family Friendly'),
+                      _buildFeatureChip_Rakha(
+                          Icons.wheelchair_pickup, 'Accessible'),
+                      _buildFeatureChip_Rakha(
+                          Icons.family_restroom, 'Family Friendly'),
                     ],
                   ),
                 ],
@@ -256,8 +232,7 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
         width: double.infinity,
         child: FloatingActionButton.extended(
           onPressed: () {
-            // Navigate to seat selection
-            // TODO: Add navigation to seat selection
+            _navigateToSeatSelection_Rakha(context);
           },
           icon: Icon(Icons.confirmation_number, color: Colors.white),
           label: Text(
@@ -289,5 +264,42 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
       backgroundColor: Colors.blue[50],
       side: BorderSide(color: Colors.blue[100]!),
     );
+  }
+
+  void _navigateToSeatSelection_Rakha(BuildContext context) {
+    try {
+      print("🎬 DEBUG: Button pressed for movie: ${movie.title}");
+
+      // Get the provider
+      final bookingProvider =
+          Provider.of<BookingProvider_Tio>(context, listen: false);
+
+      // ==========================================
+      // PERBAIKAN: Ganti selectMovie jadi setSelectedMovie_Tio
+      // ==========================================
+      bookingProvider.setSelectedMovie_Tio(movie);
+      bookingProvider
+          .clearSeats_Tio(); // Reset kursi biar bersih saat pilih film baru
+
+      print("🎬 DEBUG: Movie set to provider: ${movie.title}");
+
+      // Navigate to seat selection screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SeatSelectionScreen_Anisa(),
+        ),
+      );
+
+      print("🎬 DEBUG: Navigation successful");
+    } catch (e) {
+      print("🔥 ERROR in navigation: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

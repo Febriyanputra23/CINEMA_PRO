@@ -2,7 +2,7 @@ import 'package:cinema_pro/models/movie_model_all_febriyan.dart';
 import 'package:cinema_pro/providers/booking_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/booking_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Wajib untuk cek status user
 
 class SeatSelectionScreen_Anisa extends StatelessWidget {
   final List<String> rowLabels = ['A', 'B', 'C', 'D', 'E', 'F']; // 6 baris
@@ -15,8 +15,28 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
 
     if (movie == null) {
       return Scaffold(
-        appBar: AppBar(title: Text('Select Seats')),
-        body: Center(child: Text('No movie selected')),
+        appBar: AppBar(
+          title: Text('Select Seats'),
+          backgroundColor: Colors.blue,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 60, color: Colors.red),
+              SizedBox(height: 20),
+              Text(
+                'No Movie Selected',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -29,16 +49,16 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
         children: [
           // 1. INFO FILM
           _buildMovieInfo_Anisa(movie),
-          
+
           // 2. LABEL "SCREEN"
           _buildScreenLabel_Anisa(),
-          
+
           // 3. GRID KURSI 6x8
           _buildSeatGrid_Anisa(bookingProvider),
-          
+
           // 4. LEGENDA WARNA
           _buildLegend_Anisa(),
-          
+
           // 5. CHECKOUT SECTION
           _buildCheckoutSection_Anisa(bookingProvider, context),
         ],
@@ -68,8 +88,8 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
           children: [
             Text('Base Price: Rp ${movie.base_price}'),
             if (movie.title.length > 10)
-              Text('+ Long Title Tax: Rp 2.500', 
-                   style: TextStyle(color: Colors.orange)),
+              Text('+ Long Title Tax: Rp 2.500',
+                  style: TextStyle(color: Colors.orange)),
           ],
         ),
       ),
@@ -86,8 +106,8 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
           width: 250,
           color: Colors.grey,
         ),
-        Text('SCREEN', 
-             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text('SCREEN',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         SizedBox(height: 20),
       ],
     );
@@ -105,20 +125,18 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
               children: [
                 // Label baris (A, B, C, ...)
                 SizedBox(
-                  width: 30, 
-                  child: Text(
-                    rowLabels[rowIndex], 
-                    style: TextStyle(fontWeight: FontWeight.bold)
-                  )
-                ),
+                    width: 30,
+                    child: Text(rowLabels[rowIndex],
+                        style: TextStyle(fontWeight: FontWeight.bold))),
                 SizedBox(width: 10),
-                
+
                 // 8 kursi per baris
                 Expanded(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: List.generate(seatsPerRow, (colIndex) {
-                      String seatNumber = '${rowLabels[rowIndex]}${colIndex + 1}';
+                      String seatNumber =
+                          '${rowLabels[rowIndex]}${colIndex + 1}';
                       return SeatItem_Anisa(
                         seatNumber: seatNumber,
                         isSelected: provider.selectedSeats.contains(seatNumber),
@@ -160,11 +178,9 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
     );
   }
 
-  // ============= METHOD 5: CHECKOUT SECTION =============
+  // ============= METHOD 5: CHECKOUT SECTION (FIXED) =============
   Widget _buildCheckoutSection_Anisa(
-    BookingProvider_Tio provider, 
-    BuildContext context
-  ) {
+      BookingProvider_Tio provider, BuildContext context) {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -181,23 +197,21 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
                 children: [
                   Text('Selected Seats', style: TextStyle(color: Colors.grey)),
                   Text(
-                    provider.selectedSeats.join(', '), 
-                    style: TextStyle(fontWeight: FontWeight.bold)
-                  ),
+                      provider.selectedSeats.isNotEmpty
+                          ? provider.selectedSeats.join(', ')
+                          : 'No seats selected',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text('Total Price', style: TextStyle(color: Colors.grey)),
-                  Text(
-                    'Rp ${provider.totalPrice}', 
-                    style: TextStyle(
-                      fontSize: 20, 
-                      fontWeight: FontWeight.bold, 
-                      color: Colors.green
-                    )
-                  ),
+                  Text('Rp ${provider.totalPrice}',
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green)),
                 ],
               ),
             ],
@@ -207,8 +221,8 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: provider.selectedSeats.isEmpty 
-                  ? null 
+              onPressed: provider.selectedSeats.isEmpty
+                  ? null
                   : () => _checkout_Anisa(context, provider),
               child: Text('CHECKOUT', style: TextStyle(fontSize: 16)),
             ),
@@ -218,8 +232,19 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
     );
   }
 
-  // ============= LOGIC CHECKOUT =============
+  // ============= LOGIC CHECKOUT (FIXED & ROBUST) =============
   void _checkout_Anisa(BuildContext context, BookingProvider_Tio provider) {
+    // PERBAIKAN: Check User Login sebelum Checkout (Penting!)
+    if (FirebaseAuth.instance.currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text("Error: Anda harus Login/Register sebelum Checkout!"),
+            backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    // 1. Tampilkan Dialog Konfirmasi
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -235,17 +260,53 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context), 
-            child: Text('Cancel')
-          ),
+              onPressed: () => Navigator.pop(context), child: Text('Cancel')),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showSuccessDialog_Anisa(context);
+            onPressed: () async {
+              // <-- WAJIB ASYNC
+              Navigator.pop(context); // Tutup Konfirmasi Dialog
+
+              _showLoadingDialog_Anisa(context); // Tampilkan Loading
+
+              try {
+                // PANGGIL FUNGSI SIMPAN KE FIREBASE
+                await provider.checkout_Tio();
+
+                // Jika sukses, tutup loading dan tampilkan sukses
+                Navigator.pop(context); // Tutup Loading
+                _showSuccessDialog_Anisa(context);
+              } catch (e) {
+                // Jika gagal, tutup loading dan tampilkan error
+                Navigator.pop(context); // Tutup Loading
+                String errorMessage = e.toString().contains("Permission Denied")
+                    ? "Gagal Simpan: Cek Security Rules Firebase Anda."
+                    : "Gagal Booking: Pastikan koneksi internet dan kursi terpilih.";
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text(errorMessage), backgroundColor: Colors.red),
+                );
+              }
             },
             child: Text('Confirm'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showLoadingDialog_Anisa(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text("Processing booking..."),
+          ],
+        ),
       ),
     );
   }
@@ -259,8 +320,8 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
           children: [
             Icon(Icons.check_circle, color: Colors.green, size: 60),
             SizedBox(height: 16),
-            Text('Booking Successful!', 
-                 style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Booking Successful!',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             SizedBox(height: 8),
             Text('Show QR Code at cinema'),
           ],
@@ -268,7 +329,9 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
         actions: [
           Center(
             child: ElevatedButton(
-              onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+              // Navigasi ke halaman utama (Login/Home) setelah sukses
+              onPressed: () =>
+                  Navigator.popUntil(context, (route) => route.isFirst),
               child: Text('OK'),
             ),
           ),
@@ -296,10 +359,13 @@ class SeatItem_Anisa extends StatelessWidget {
     // Kursi yang sudah terjual (simulasi)
     List<String> bookedSeats = ['A2', 'B5', 'C3', 'D7', 'E1', 'F4'];
     bool isBooked = bookedSeats.contains(seatNumber);
-    
+
     // LOGIC WARNA:
-    Color seatColor = isBooked ? Colors.red : 
-                     isSelected ? Colors.blue : Colors.grey;
+    Color seatColor = isBooked
+        ? Colors.red
+        : isSelected
+            ? Colors.blue
+            : Colors.grey;
 
     return GestureDetector(
       onTap: isBooked ? null : onTap, // Disabled jika sudah terjual
@@ -319,10 +385,7 @@ class SeatItem_Anisa extends StatelessWidget {
           child: Text(
             seatNumber.substring(1), // Tampilkan hanya angka (A1 → "1")
             style: TextStyle(
-              color: Colors.white, 
-              fontWeight: FontWeight.bold, 
-              fontSize: 12
-            ),
+                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
           ),
         ),
       ),

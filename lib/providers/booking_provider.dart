@@ -1,21 +1,27 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/movie_model_all_febriyan.dart';
 import '../models/booking_model_febriyan.dart';
-import '../services/movie_service_febriyan.dart';
 import '../utils/logic_trap_utils_tio.dart';
+
 class BookingProvider_Tio with ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
   // ==================== STATE VARIABLES ====================
   List<String> _selectedSeats = [];
   MovieModel_Febriyan? _selectedMovie;
   int _totalPrice = 0;
 
+  // Untuk riwayat tiket
+  List<BookingModel_Febriyan> _bookingHistory = [];
+  bool _isLoadingHistory = false;
+
   // ==================== GETTERS ====================
   List<String> get selectedSeats => _selectedSeats;
   MovieModel_Febriyan? get selectedMovie => _selectedMovie;
   int get totalPrice => _totalPrice;
+  List<BookingModel_Febriyan> get bookingHistory => _bookingHistory;
+  bool get isLoadingHistory => _isLoadingHistory;
 
   // ==================== MOVIE METHODS ====================
   void setSelectedMovie_Tio(MovieModel_Febriyan movie) {
@@ -41,375 +47,140 @@ class BookingProvider_Tio with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==================== LOGIC TRAP IMPLEMENTATION ====================
-void _calculateTotalPrice_Tio() {
-  if (_selectedMovie == null) {
-    _totalPrice = 0;
-    return;
+  // ==================== PRICE CALCULATION ====================
+  void _calculateTotalPrice_Tio() {
+    if (_selectedMovie == null) {
+      _totalPrice = 0;
+      return;
+    }
+
+    // Gunakan fungsi manual dari LogicTrapUtils_Tio
+    _totalPrice = LogicTrapUtils_Tio.calculateTotalPriceManual_Tio(
+      movieTitle: _selectedMovie!.title,
+      basePrice: _selectedMovie!.base_price,
+      selectedSeats: _selectedSeats,
+    );
+
+    notifyListeners();
   }
 
-  // Gunakan fungsi manual dari LogicTrapUtils_Tio
-  _totalPrice = LogicTrapUtils_Tio.calculateTotalPriceManual_Tio(
-    movieTitle: _selectedMovie!.title,
-    basePrice: _selectedMovie!.base_price,
-    selectedSeats: _selectedSeats,
-  );
-  
-  notifyListeners();
-}
+  // ==================== HISTORY TICKET (REALTIME FIREBASE) ====================
 
-  // Fungsi manual untuk parse angka dari string
-  int _parseSeatNumber_Tio(String seatNumberStr) {
+  Future<void> loadBookingHistory_Tio() async {
     try {
-      return int.parse(seatNumberStr);
+      _isLoadingHistory = true;
+      // notifyListeners(); // Hindari notify saat build widget
+
+      // 1. Ambil User ID yang sedang login
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        _bookingHistory = [];
+        _isLoadingHistory = false;
+        notifyListeners();
+        return;
+      }
+
+      // 2. Ambil data dari koleksi 'bookings' milik user ini
+      final snapshot = await FirebaseFirestore.instance
+          .collection('bookings')
+          .where('user_id', isEqualTo: user.uid)
+          .orderBy('booking_date', descending: true)
+          .get();
+
+      // 3. Ubah jadi List BookingModel
+      _bookingHistory = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['booking_id'] = doc.id;
+        return BookingModel_Febriyan.fromMap(data);
+      }).toList();
+
+      _isLoadingHistory = false;
+      notifyListeners();
     } catch (e) {
-      return 0;
+      _isLoadingHistory = false;
+      notifyListeners();
+      print('Error loading booking history: $e');
     }
   }
 
-  // Fungsi manual untuk hitung diskon (TIDAK pakai library)
-  int _calculateDiscount_Tio(int price, int discountPercent) {
-    double discountMultiplier = (100 - discountPercent) / 100;
-    return (price * discountMultiplier).round();
-  }
-
-  // ==================== DUMMY DATA FOR TESTING ====================
-  List<MovieModel_Febriyan> getDummyMovies_Tio() {
-    return [
-      MovieModel_Febriyan(
-        movie_id: "1",
-        title: "Avatar",
-        posterior1: "https://via.placeholder.com/300x450/007BFF/FFFFFF?text=Avatar",
-        base_price: 35000,
-        rating: 4.5,
-        duration: 162,
-      ),
-      MovieModel_Febriyan(
-        movie_id: "2",
-        title: "Spider-Man: No Way Home",
-        posterior1: "https://via.placeholder.com/300x450/DC3545/FFFFFF?text=Spider-Man",
-        base_price: 40000,
-        rating: 4.8,
-        duration: 148,
-      ),
-      MovieModel_Febriyan(
-        movie_id: "3",
-        title: "Titanic",
-        posterior1: "https://via.placeholder.com/300x450/28A745/FFFFFF?text=Titanic",
-        base_price: 30000,
-        rating: 4.7,
-        duration: 195,
-      ),
-      MovieModel_Febriyan(
-        movie_id: "4",
-        title: "The Avengers: Endgame",
-        posterior1: "https://via.placeholder.com/300x450/FFC107/000000?text=Avengers",
-        base_price: 45000,
-        rating: 4.9,
-        duration: 181,
-      ),
-      MovieModel_Febriyan(
-        movie_id: "5",
-        title: "Inception",
-        posterior1: "https://via.placeholder.com/300x450/9C27B0/FFFFFF?text=Inception",
-        base_price: 38000,
-        rating: 4.8,
-        duration: 148,
-      ),
-    ];
-  }
-
-  // ==================== CHECKOUT METHOD (INTEGRASI FIREBASE) ====================
-  Future<void> checkout_Tio(String userId) async {
+  // ==================== CHECKOUT (FIXED: BISA BOOKING BERULANG) ====================
+  Future<void> checkout_Tio() async {
     try {
-      // Validasi data
-      if (_selectedMovie == null) {
-        throw 'No movie selected';
-      }
-      if (_selectedSeats.isEmpty) {
-        throw 'No seats selected';
-      }
+      if (_selectedMovie == null) throw 'No movie selected';
+      if (_selectedSeats.isEmpty) throw 'No seats selected';
 
-      // Generate booking ID
+      // 1. Ambil User ID Otomatis
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw 'User not logged in';
+
       String bookingId = 'BOOK_${DateTime.now().millisecondsSinceEpoch}';
 
-      // Create booking data sesuai struktur Firestore
+      // 2. Siapkan Data
       Map<String, dynamic> bookingData = {
         'booking_id': bookingId,
-        'user_id': userId,
+        'user_id': user.uid,
         'movie_title': _selectedMovie!.title,
         'seats': _selectedSeats,
         'total_price': _totalPrice,
-        'booking_date': DateTime.now(),
+        'booking_date': DateTime.now().toIso8601String(),
+        'status': 'ACTIVE',
+        'poster_url': _selectedMovie!.posterior1,
+        'theater_name': 'Cinema XXI',
+        'showtime': '19:00',
       };
 
-      // Kirim ke Firebase menggunakan service dari Febri
-      // Note: Uncomment line di bawah setelah FirebaseService_Riz siap
-      // await FirebaseService_Riz().createBooking_Riz(bookingData);
-      
-      // Simulate Firebase call untuk testing
-      await _simulateFirebaseCall_Tio(bookingData);
+      // 3. SIMPAN KE FIREBASE
+      await FirebaseFirestore.instance
+          .collection('bookings')
+          .doc(bookingId)
+          .set(bookingData);
 
-      // Clear selection after successful checkout
+      print("✅ Berhasil simpan ke Firebase!");
+
+      // 4. Update History Lokal biar langsung muncul
+      final newBooking = BookingModel_Febriyan.fromMap(bookingData);
+      _bookingHistory.insert(0, newBooking);
+
+      // 5. Reset Kursi SAJA (Movie jangan di-reset)
       _selectedSeats.clear();
-      _selectedMovie = null;
       _totalPrice = 0;
+
+      // --- PERBAIKAN DI SINI ---
+      // Baris di bawah ini dikomentari/dimatikan agar kamu bisa booking lagi
+      // _selectedMovie = null;
+
       notifyListeners();
-
     } catch (e) {
-      // Error handling untuk offline scenario (Tes Crash)
-      if (e.toString().contains('offline') || e.toString().contains('network')) {
-        throw 'Connection error. Please check your internet connection.';
-      } else {
-        throw 'Checkout failed: $e';
-      }
+      print("Error Checkout: $e");
+      throw 'Checkout failed: $e';
     }
   }
 
-  // Simulate Firebase call untuk testing
-  Future<void> _simulateFirebaseCall_Tio(Map<String, dynamic> bookingData) async {
-    await Future.delayed(Duration(seconds: 2));
-    
-    // Simulate success
-    print('Booking data sent to Firebase: $bookingData');
-  }
+  // ==================== QR CODE & HELPER ====================
 
-  // ==================== MANUAL CALCULATION FOR TESTING ====================
-  int calculateSeatPriceManual_Tio(String seatNumber, int basePrice, bool hasLongTitle) {
-    String seatNumberStr = seatNumber.substring(1);
-    int seatNumberInt = _parseSeatNumber_Tio(seatNumberStr);
-    
-    // Logic Trap 1: Long Title Tax
-    int titleTax = hasLongTitle ? 2500 : 0;
-    int price = basePrice + titleTax;
-    
-    // Logic Trap 2: Odd/Even Seat Rule
-    if (seatNumberInt % 2 == 0) {
-      price = _calculateDiscount_Tio(price, 10);
-    }
-    
-    return price;
-  }
-
-  // ==================== DEBUG & TESTING METHODS ====================
-  void debugLogicTrap_Tio() {
-    print('=== DEBUG LOGIC TRAP (TIO) ===');
-    if (_selectedMovie != null) {
-      print('Movie: ${_selectedMovie!.title}');
-      print('Title Length: ${_selectedMovie!.title.length}');
-      print('Long Title Tax (>10 chars): ${_selectedMovie!.title.length > 10}');
-      print('Base Price: ${_selectedMovie!.base_price}');
-    }
-    print('Selected Seats: $_selectedSeats');
-    print('Total Price: $_totalPrice');
-    
-    // Detailed calculation
-    if (_selectedMovie != null && _selectedSeats.isNotEmpty) {
-      print('\nDetailed Calculation:');
-      for (String seat in _selectedSeats) {
-        String seatNum = seat.substring(1);
-        int seatNumInt = _parseSeatNumber_Tio(seatNum);
-        bool isEven = seatNumInt % 2 == 0;
-        print('$seat: ${isEven ? "Even (10% discount)" : "Odd (normal price)"}');
-      }
-    }
-  }
-
-  // ==================== TEST SCENARIOS FOR QA ====================
-  Map<String, dynamic> testLogicTrapScenarios_Tio() {
-    Map<String, dynamic> results = {};
-    
-    // Test 1: Judul panjang vs pendek
-    MovieModel_Febriyan shortMovie = MovieModel_Febriyan(
-      movie_id: "test1",
-      title: "Avatar",
-      posterior1: "",
-      base_price: 35000,
-      rating: 4.5,
-      duration: 162,
-    );
-    
-    MovieModel_Febriyan longMovie = MovieModel_Febriyan(
-      movie_id: "test2",
-      title: "Spider-Man: No Way Home",
-      posterior1: "",
-      base_price: 40000,
-      rating: 4.8,
-      duration: 148,
-    );
-    
-    // Test harga untuk kursi A1 (ganjil) dan A2 (genap)
-    _selectedMovie = shortMovie;
-    _selectedSeats = ['A1', 'A2'];
-    _calculateTotalPrice_Tio();
-    results['shortMovie_2seats'] = _totalPrice;
-    
-    _selectedMovie = longMovie;
-    _selectedSeats = ['A1', 'A2'];
-    _calculateTotalPrice_Tio();
-    results['longMovie_2seats'] = _totalPrice;
-    
-    // Reset
-    _selectedSeats.clear();
-    _selectedMovie = null;
-    _totalPrice = 0;
-    notifyListeners();
-    
-    return results;
-  }
-
-  // ==================== TESTING FUNCTIONS FOR QA ====================
-  Map<String, dynamic> testLogicTrap_Tio() {
-    if (_selectedMovie == null) {
-      return {'error': 'No movie selected'};
-    }
-
-    int basePrice = _selectedMovie!.base_price;
-    bool isLongTitle = _selectedMovie!.title.length > 10;
-    int titleTax = isLongTitle ? 2500 : 0;
-
-    List<Map<String, dynamic>> seatCalculations = [];
-
-    for (String seat in _selectedSeats) {
-      String seatNumberStr = seat.substring(1);
-      int seatNumber = _parseSeatNumber_Tio(seatNumberStr);
-      bool isEven = seatNumber % 2 == 0;
-      
-      int seatPrice = basePrice + titleTax;
-      int originalPrice = seatPrice;
-      
-      if (isEven) {
-        seatPrice = _calculateDiscount_Tio(seatPrice, 10);
-      }
-
-      seatCalculations.add({
-        'seat': seat,
-        'seat_number': seatNumber,
-        'is_even': isEven,
-        'original_price': originalPrice,
-        'final_price': seatPrice,
-      });
-    }
-
-    return {
-      'movie_title': _selectedMovie!.title,
-      'title_length': _selectedMovie!.title.length,
-      'is_long_title': isLongTitle,
-      'title_tax': titleTax,
-      'base_price': basePrice,
-      'selected_seats': _selectedSeats,
-      'seat_calculations': seatCalculations,
-      'total_price': _totalPrice,
+  String generateQRData_Tio(BookingModel_Febriyan booking) {
+    final data = {
+      'booking_id': booking.booking_id,
+      'movie': booking.movie_title,
+      'seats': booking.seats,
+      'total': booking.total_price,
+      'verification': _generateVerificationHash_Tio(booking.booking_id),
     };
+    return jsonEncode(data);
   }
 
-  // ==================== RESET METHOD ====================
+  String _generateVerificationHash_Tio(String bookingId) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final hash = (bookingId.hashCode + timestamp).toRadixString(16);
+    return hash.substring(0, 8).toUpperCase();
+  }
+
+  // Method ini dipanggil HANYA kalau logout atau benar-benar keluar app
   void resetAll_Tio() {
     _selectedSeats.clear();
     _selectedMovie = null;
     _totalPrice = 0;
+    _bookingHistory.clear();
     notifyListeners();
-  }
-
-  // ==================== VALIDATION METHODS ====================
-  bool isSeatEven_Tio(String seatNumber) {
-    String seatNumStr = seatNumber.substring(1);
-    int seatNum = _parseSeatNumber_Tio(seatNumStr);
-    return seatNum % 2 == 0;
-  }
-
-  bool hasLongTitleTax_Tio() {
-    return _selectedMovie != null && _selectedMovie!.title.length > 10;
-  }
-
-  // ==================== PRICE BREAKDOWN FOR UI ====================
-  Map<String, dynamic> getPriceBreakdown_Tio() {
-    if (_selectedMovie == null) {
-      return {
-        'base_price': 0,
-        'title_tax': 0,
-        'seat_details': [],
-        'total': 0
-      };
-    }
-
-    List<Map<String, dynamic>> seatDetails = [];
-    int basePrice = _selectedMovie!.base_price;
-    int titleTax = _selectedMovie!.title.length > 10 ? 2500 : 0;
-
-    for (String seat in _selectedSeats) {
-      String seatNumStr = seat.substring(1);
-      int seatNum = _parseSeatNumber_Tio(seatNumStr);
-      bool isEven = seatNum % 2 == 0;
-      
-      int seatPrice = basePrice + titleTax;
-      int discount = 0;
-      
-      if (isEven) {
-        discount = _calculateDiscount_Tio(seatPrice, 10);
-        seatPrice -= discount;
-      }
-      
-      seatDetails.add({
-        'seat': seat,
-        'is_even': isEven,
-        'base_price': basePrice,
-        'title_tax': titleTax,
-        'discount': discount,
-        'final_price': seatPrice
-      });
-    }
-
-    return {
-      'base_price': basePrice,
-      'title_tax': titleTax,
-      'seat_details': seatDetails,
-      'total': _totalPrice
-    };
-  }
-
-  // ==================== FIREBASE INTEGRATION METHODS ====================
-  Future<void> saveBookingToFirebase_Tio() async {
-    if (_selectedMovie == null || _selectedSeats.isEmpty) {
-      throw 'Cannot save: No movie or seats selected';
-    }
-
-    try {
-      // Generate booking ID
-      String bookingId = 'BOOK_${DateTime.now().millisecondsSinceEpoch}';
-      
-      // Create booking document
-      await _firestore.collection('bookings').doc(bookingId).set({
-        'booking_id': bookingId,
-        'user_id': 'user_${DateTime.now().millisecondsSinceEpoch}', // Placeholder
-        'movie_title': _selectedMovie!.title,
-        'seats': _selectedSeats,
-        'total_price': _totalPrice,
-        'booking_date': Timestamp.now(),
-      });
-
-      // Reset after successful save
-      _selectedSeats.clear();
-      _selectedMovie = null;
-      _totalPrice = 0;
-      notifyListeners();
-
-    } catch (e) {
-      throw 'Failed to save booking: $e';
-    }
-  }
-
-  // ==================== ERROR HANDLING FOR CRASH TEST ====================
-  Future<void> testCrashScenario_Tio() async {
-    try {
-      // Simulate network failure
-      await Future.delayed(Duration(seconds: 1));
-      throw Exception('Simulated network error');
-    } catch (e) {
-      // Aplikasi tidak boleh crash, hanya tampilkan error message
-      print('Error handled gracefully: $e');
-      // Kembalikan error message untuk ditampilkan di UI
-      throw 'Payment failed: Please check your internet connection and try again.';
-    }
   }
 }

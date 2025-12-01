@@ -1,4 +1,3 @@
-// Database Model Movie
 class MovieModel_Febriyan {
   final String movie_id;
   final String title;
@@ -16,22 +15,23 @@ class MovieModel_Febriyan {
     required this.duration,
   });
 
-  factory MovieModel_Febriyan.fromMap(Map<String, dynamic> map) {
+  // PERUBAHAN DISINI: Tambahkan parameter 'String id'
+  factory MovieModel_Febriyan.fromMap(Map<String, dynamic> map, String id) {
     return MovieModel_Febriyan(
-      movie_id: map['movie_id'] ?? '',
-      title: map['title'] ?? '',
-      posterior1: map['posterior1'] ?? '',
+      movie_id: id, // Pakai ID dari dokumen Firestore
+      title: map['title'] ?? 'No Title',
+      posterior1: map['posterior1'] ?? 'https://via.placeholder.com/150',
       base_price: map['base_price'] ?? 0,
+      // Konversi aman untuk rating (bisa int atau double)
       rating: (map['rating'] is int)
           ? (map['rating'] as int).toDouble()
-          : map['rating']?.toDouble() ?? 0.0,
+          : (map['rating'] as double?) ?? 0.0,
       duration: map['duration'] ?? 0,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'movie_id': movie_id,
       'title': title,
       'posterior1': posterior1,
       'base_price': base_price,

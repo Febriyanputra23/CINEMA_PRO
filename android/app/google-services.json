@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "456751506558",
+    "project_id": "cinemapro-46954",
+    "storage_bucket": "cinemapro-46954.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:456751506558:android:52da3c20c0e633e547a42f",
+        "android_client_info": {
+          "package_name": "com.example.percobaan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrS2Rxf00QsrBdmcF4kKdch3j9wx1ioEs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

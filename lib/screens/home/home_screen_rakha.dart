@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/movie_model_all_febriyan.dart';
-//import 'movie_detail_screen_rakha.dart';
+import 'movie_detail_screen_rakha.dart';
 
 // Data dummy movie untuk sementara
 List<MovieModel_Febriyan> dummyMovies_Rakha = [

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/movie_service_febriyan.dart';
 import '../home/home_screen_rakha.dart';
-//import 'login_screen_rakha.dart';
+import 'login_screen_rakha.dart';
 
 class RegisterScreen_Rakha extends StatefulWidget {
   @override

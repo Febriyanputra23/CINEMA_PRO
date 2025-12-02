@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -58,6 +60,8 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
   Widget _buildMovieInfo_Anisa(MovieModel_Febriyan movie) {
     // Logika Long Title Tax sesuai spesifikasi
     bool hasLongTitleTax = movie.title.length > 10;
+    // ignore: duplicate_ignore
+    // ignore: unused_local_variable
     int taxAmount = hasLongTitleTax ? 2500 : 0;
     
     return Card(

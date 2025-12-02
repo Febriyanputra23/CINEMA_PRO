@@ -57,7 +57,7 @@ class FirebaseService_Febriyan {
     return _firestore.collection('movies').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
         return MovieModel_Febriyan.fromMap(
-          doc.data() as Map<String, dynamic>,
+          doc.data(),
           doc.id
         );
       }).toList();
@@ -98,6 +98,7 @@ class FirebaseService_Febriyan {
         .snapshots()
         .map((snapshot) {
           return snapshot.docs.map((doc) {
+            // ignore: unnecessary_cast
             Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
             data['booking_id'] = doc.id;
             return BookingModel_Febriyan.fromMap(data);

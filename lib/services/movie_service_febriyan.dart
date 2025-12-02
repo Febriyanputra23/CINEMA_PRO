@@ -8,7 +8,6 @@ class FirebaseService_Febriyan {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // ================= AUTH METHODS =================
   Future<User?> signInWithEmail_Febriyan(String email, String password) async {
     try {
       UserCredential credential = await _auth.signInWithEmailAndPassword(
@@ -54,14 +53,11 @@ class FirebaseService_Febriyan {
     await _auth.signOut();
   }
 
-  // ================= MOVIE METHODS (YANG DIPERBAIKI) =================
-  
   Stream<List<MovieModel_Febriyan>> getMovies_Febriyan() {
     return _firestore.collection('movies').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
-        // PERBAIKAN: Gunakan 2 parameter (Data + ID)
         return MovieModel_Febriyan.fromMap(
-          doc.data() as Map<String, dynamic>, 
+          doc.data() as Map<String, dynamic>,
           doc.id
         );
       }).toList();
@@ -72,9 +68,8 @@ class FirebaseService_Febriyan {
     try {
       var doc = await _firestore.collection('movies').doc(movieId).get();
       if (doc.exists) {
-        // PERBAIKAN: Gunakan 2 parameter (Data + ID)
         return MovieModel_Febriyan.fromMap(
-          doc.data() as Map<String, dynamic>, 
+          doc.data() as Map<String, dynamic>,
           doc.id
         );
       } else {
@@ -85,8 +80,6 @@ class FirebaseService_Febriyan {
     }
   }
 
-  // ================= BOOKING METHODS =================
-  
   Future<void> createBooking_Febriyan(BookingModel_Febriyan booking) async {
     try {
       await _firestore
@@ -106,15 +99,11 @@ class FirebaseService_Febriyan {
         .map((snapshot) {
           return snapshot.docs.map((doc) {
             Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-            // Note: Kalau BookingModel masih versi lama (1 parameter), baris ini benar.
-            // Kalau BookingModel diupdate juga, sesuaikan seperti MovieModel.
-            data['booking_id'] = doc.id; 
+            data['booking_id'] = doc.id;
             return BookingModel_Febriyan.fromMap(data);
           }).toList();
         });
   }
-
-  // ================= USER METHODS =================
 
   Future<UserModel_Febriyan> getUserData_Febriyan(String userId) async {
     try {

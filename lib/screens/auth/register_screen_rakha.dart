@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../../services/movie_service_febriyan.dart';
 import '../home/home_screen_rakha.dart';
 import 'login_screen_rakha.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterScreen_Rakha extends StatefulWidget {
   @override

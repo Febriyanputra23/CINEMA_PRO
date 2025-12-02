@@ -1,80 +1,113 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Wajib
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/booking_model_febriyan.dart';
-import '../../providers/booking_provider.dart'; // Wajib
+import '../../models/user_model_febriyan.dart';
+import '../../providers/booking_provider.dart';
 
-// 1. Ubah menjadi StatefulWidget
 class ProfileScreen_Anisa extends StatefulWidget {
   @override
   _ProfileScreen_AnisaState createState() => _ProfileScreen_AnisaState();
 }
 
 class _ProfileScreen_AnisaState extends State<ProfileScreen_Anisa> {
+  UserModel_Febriyan? _userData;
+  bool _isLoadingUser = true;
+
   @override
   void initState() {
     super.initState();
-    // PENTING: Panggil fungsi fetch data di initState
-    // Menggunakan Future.microtask agar Provider dapat diakses dengan aman.
     Future.microtask(() {
+      _loadUserData();
       Provider.of<BookingProvider_Tio>(context, listen: false)
           .loadBookingHistory_Tio();
     });
   }
 
+  Future<void> _loadUserData() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (doc.exists) {
+          setState(() {
+            _userData = UserModel_Febriyan.fromMap(doc.data()!);
+            _isLoadingUser = false;
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isLoadingUser = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 2. Gunakan Consumer untuk mendengarkan perubahan data History
     return Consumer<BookingProvider_Tio>(
         builder: (context, bookingProvider, child) {
       final bookings = bookingProvider.bookingHistory;
       final isLoading = bookingProvider.isLoadingHistory;
 
       return Scaffold(
-        appBar: AppBar(title: Text('My Profile')),
-        body: ListView(
-          children: [
-            // Profile Header (Data User masih Hardcoded)
-            _buildProfileHeader(),
-
-            // ----------------------------------------
-            // Bagian Riwayat Booking (Live Data)
-            // ----------------------------------------
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Booking History',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-            SizedBox(height: 10),
-
-            // 3. Tampilkan Loading atau Data
-            if (isLoading)
-              Center(
-                  child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: CircularProgressIndicator(),
-              ))
-            else if (bookings.isEmpty)
-              Center(
-                  child: Padding(
-                padding: const EdgeInsets.all(30.0),
-                child: Text("Anda belum memiliki tiket yang aktif.",
-                    style: TextStyle(color: Colors.grey[600])),
-              ))
-            else
-              // 4. Tampilkan Daftar Booking dari Provider
-              ...bookings
-                  .map((booking) => _buildBookingCard(booking, bookingProvider))
-                  .toList(),
-          ],
+        appBar: AppBar(
+          title: Text('My Profile'),
+          backgroundColor: Colors.blue,
+        ),
+        body: RefreshIndicator(
+          onRefresh: () async {
+            await _loadUserData();
+            await bookingProvider.loadBookingHistory_Tio();
+          },
+          child: ListView(
+            children: [
+              _buildProfileHeader(),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Text('Booking History',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              if (isLoading)
+                Center(
+                    child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: CircularProgressIndicator(),
+                ))
+              else if (bookings.isEmpty)
+                Center(
+                    child: Padding(
+                  padding: const EdgeInsets.all(30.0),
+                  child: Text("Anda belum memiliki tiket yang aktif.",
+                      style: TextStyle(color: Colors.grey[600])),
+                ))
+              else
+                ...bookings
+                    .map((booking) => _buildBookingCard(booking, bookingProvider))
+                    .toList(),
+            ],
+          ),
         ),
       );
     });
   }
 
-  // --- WIDGET PROFILE HEADER (Masih Statis/Hardcoded) ---
   Widget _buildProfileHeader() {
-    // Perlu diintegrasikan dengan Firebase Auth/Service untuk data asli
+    if (_isLoadingUser) {
+      return Card(
+        margin: EdgeInsets.all(16),
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
     return Card(
       margin: EdgeInsets.all(16),
       child: Padding(
@@ -90,12 +123,12 @@ class _ProfileScreen_AnisaState extends State<ProfileScreen_Anisa> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Anisa suci',
+                  Text(_userData?.username ?? 'User',
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text('anisa@student.poliwangi.ac.id'),
+                  Text(_userData?.email ?? 'email@student.univ.ac.id'),
                   SizedBox(height: 4),
-                  Text('Balance: Rp 250.000',
+                  Text('Balance: Rp ${_userData?.balance ?? 0}',
                       style: TextStyle(
                           color: Colors.green, fontWeight: FontWeight.bold)),
                 ],
@@ -107,7 +140,6 @@ class _ProfileScreen_AnisaState extends State<ProfileScreen_Anisa> {
     );
   }
 
-  // --- WIDGET CARD BOOKING ---
   Widget _buildBookingCard(
       BookingModel_Febriyan booking, BookingProvider_Tio provider) {
     return Card(
@@ -131,8 +163,7 @@ class _ProfileScreen_AnisaState extends State<ProfileScreen_Anisa> {
             ),
             SizedBox(height: 8),
             Text('Seats: ${booking.seats.join(', ')}'),
-            Text('Date: ${_formatDate(booking.booking_date)}'),
-            // ... (Detail lainnya)
+            Text('Date: ${_formatDate(booking.booking_date.toDate())}'),
             SizedBox(height: 16),
             Center(
               child: Column(
@@ -141,7 +172,6 @@ class _ProfileScreen_AnisaState extends State<ProfileScreen_Anisa> {
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 8),
                   QrImageView(
-                    // Gunakan data JSON dari provider untuk QR Code
                     data: provider.generateQRData_Tio(booking),
                     size: 120,
                     backgroundColor: Colors.white,
@@ -158,7 +188,6 @@ class _ProfileScreen_AnisaState extends State<ProfileScreen_Anisa> {
     );
   }
 
-  // --- FORMAT DATE HELPER ---
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }

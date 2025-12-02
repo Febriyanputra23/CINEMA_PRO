@@ -23,7 +23,7 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
               background: Hero(
                 tag: 'movie-${movie.movie_id}',
                 child: Image.network(
-                  movie.posterior1,
+                  movie.poster_url,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
@@ -62,7 +62,6 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Movie Title
                   Text(
                     movie.title,
                     style: TextStyle(
@@ -72,8 +71,6 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 8),
-
-                  // Rating and Duration
                   Row(
                     children: [
                       Container(
@@ -136,8 +133,6 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
                     ],
                   ),
                   SizedBox(height: 16),
-
-                  // Price Info
                   Container(
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -173,8 +168,6 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 20),
-
-                  // Movie Description
                   Text(
                     'About the Movie',
                     style: TextStyle(
@@ -195,8 +188,6 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 20),
-
-                  // Features
                   Text(
                     'Features',
                     style: TextStyle(
@@ -270,20 +261,14 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
     try {
       print("🎬 DEBUG: Button pressed for movie: ${movie.title}");
 
-      // Get the provider
       final bookingProvider =
           Provider.of<BookingProvider_Tio>(context, listen: false);
 
-      // ==========================================
-      // PERBAIKAN: Ganti selectMovie jadi setSelectedMovie_Tio
-      // ==========================================
       bookingProvider.setSelectedMovie_Tio(movie);
-      bookingProvider
-          .clearSeats_Tio(); // Reset kursi biar bersih saat pilih film baru
+      bookingProvider.clearSeats_Tio();
 
       print("🎬 DEBUG: Movie set to provider: ${movie.title}");
 
-      // Navigate to seat selection screen
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -293,7 +278,7 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
 
       print("🎬 DEBUG: Navigation successful");
     } catch (e) {
-      print("🔥 ERROR in navigation: $e");
+      print("❌ ERROR in navigation: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Error: ${e.toString()}"),

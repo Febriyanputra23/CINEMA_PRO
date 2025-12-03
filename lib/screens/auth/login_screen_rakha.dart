@@ -159,16 +159,6 @@ class _LoginScreen_RakhaState extends State<LoginScreen_Rakha> {
                       ),
                 SizedBox(height: 16),
 
-                // Forgot Password
-                Align(
-                  child: TextButton(
-                    onPressed: () {},
-                    child: Text('Forgot Password?',
-                        style: TextStyle(color: Colors.blue)),
-                  ),
-                ),
-                SizedBox(height: 20),
-
                 // Divider
                 Row(
                   children: [

@@ -13,6 +13,15 @@ class HomeScreen_Rakha extends StatefulWidget {
 class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
   final FirebaseService_Febriyan _movieService = FirebaseService_Febriyan();
 
+  void _logout_Rakha(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen_Rakha()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,16 +32,39 @@ class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
           IconButton(
             icon: Icon(Icons.person, color: Colors.white),
             onPressed: () {
-              print("🎯 Navigating to profile screen...");
               Navigator.pushNamed(context, '/profile');
             },
           ),
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.white),
+            onPressed: () => _logout_Rakha(context),
+          ),
         ],
       ),
-      drawer: _buildDrawer_Rakha(context),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeaderSection(),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.blue[50],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[900],
+                  ),
+                ),
+                Text(
+                  'Book your favorite movies easily',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: StreamBuilder<List<MovieModel_Febriyan>>(
               stream: _movieService.getMovies_Febriyan(),
@@ -40,29 +72,28 @@ class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
                 }
+
                 if (snapshot.hasError) {
-                  return Center(
-                      child: Text("Error loading movies: ${snapshot.error}"));
+                  return Center(child: Text("Error loading movies"));
                 }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+
+                final movies = snapshot.data;
+                if (movies == null || movies.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.movie_filter, size: 60, color: Colors.grey),
                         SizedBox(height: 10),
-                        Text("Belum ada film di Database"),
-                        SizedBox(height: 10),
+                        Text("No movies available"),
                       ],
                     ),
                   );
                 }
 
-                final movies = snapshot.data!;
-
                 return GridView.builder(
                   padding: EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
@@ -71,7 +102,7 @@ class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
                   itemCount: movies.length,
                   itemBuilder: (context, index) {
                     final movie = movies[index];
-                    return _buildMovieCard_Rakha(movie, context);
+                    return _buildMovieCard(movie, context);
                   },
                 );
               },
@@ -79,32 +110,10 @@ class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
           ),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
-  Widget _buildHeaderSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.blue[50],
-      width: double.infinity,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Welcome!',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue[900])),
-          Text('Book your favorite movies easily',
-              style: TextStyle(color: Colors.grey[600])),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMovieCard_Rakha(
-      MovieModel_Febriyan movie, BuildContext context) {
+  Widget _buildMovieCard(MovieModel_Febriyan movie, BuildContext context) {
     return Card(
       elevation: 4,
       child: InkWell(
@@ -125,8 +134,9 @@ class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
                 child: Image.network(
                   movie.poster_url,
                   fit: BoxFit.cover,
-                  errorBuilder: (ctx, err, stack) =>
-                      Center(child: Icon(Icons.error)),
+                  errorBuilder: (ctx, err, stack) => Center(
+                    child: Icon(Icons.movie, size: 50, color: Colors.grey),
+                  ),
                 ),
               ),
             ),
@@ -135,42 +145,27 @@ class _HomeScreen_RakhaState extends State<HomeScreen_Rakha> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(movie.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text("Rp ${movie.base_price}",
-                      style: TextStyle(color: Colors.green)),
-                  Row(children: [
-                    Icon(Icons.star, size: 14, color: Colors.amber),
-                    Text(" ${movie.rating}")
-                  ]),
+                  Text(
+                    movie.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    "Rp ${movie.base_price}",
+                    style: TextStyle(color: Colors.green),
+                  ),
+                  Row(
+                    children: [
+                      Icon(Icons.star, size: 14, color: Colors.amber),
+                      Text(" ${movie.rating}"),
+                    ],
+                  ),
                 ],
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDrawer_Rakha(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        children: [
-          DrawerHeader(child: Center(child: Text("Menu"))),
-          ListTile(
-            title: Text("Logout"),
-            onTap: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pop(context);
-              Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => LoginScreen_Rakha()),
-                  (route) => false);
-            },
-          )
-        ],
       ),
     );
   }

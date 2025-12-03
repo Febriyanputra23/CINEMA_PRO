@@ -161,7 +161,6 @@ class _LoginScreen_RakhaState extends State<LoginScreen_Rakha> {
 
                 // Forgot Password
                 Align(
-                  alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {},
                     child: Text('Forgot Password?',

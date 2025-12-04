@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,12 +11,14 @@ class BookingProvider_Tio with ChangeNotifier {
   int _totalPrice = 0;
   List<BookingModel_Febriyan> _bookingHistory = [];
   bool _isLoadingHistory = false;
+  bool _isCheckingOut = false;
 
   List<String> get selectedSeats => _selectedSeats;
   MovieModel_Febriyan? get selectedMovie => _selectedMovie;
   int get totalPrice => _totalPrice;
   List<BookingModel_Febriyan> get bookingHistory => _bookingHistory;
   bool get isLoadingHistory => _isLoadingHistory;
+  bool get isCheckingOut => _isCheckingOut;
 
   void setSelectedMovie_Tio(MovieModel_Febriyan movie) {
     _selectedMovie = movie;
@@ -46,17 +47,19 @@ class BookingProvider_Tio with ChangeNotifier {
       _totalPrice = 0;
       return;
     }
+
     _totalPrice = LogicTrapUtils_Tio.calculateTotalPriceManual_Tio(
       movieTitle: _selectedMovie!.title,
       basePrice: _selectedMovie!.base_price,
       selectedSeats: _selectedSeats,
     );
-    notifyListeners();
   }
 
   Future<void> loadBookingHistory_Tio() async {
     try {
       _isLoadingHistory = true;
+      notifyListeners();
+
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         _bookingHistory = [];
@@ -64,16 +67,19 @@ class BookingProvider_Tio with ChangeNotifier {
         notifyListeners();
         return;
       }
+
       final snapshot = await FirebaseFirestore.instance
           .collection('bookings')
           .where('user_id', isEqualTo: user.uid)
           .orderBy('booking_date', descending: true)
           .get();
+
       _bookingHistory = snapshot.docs.map((doc) {
         final data = doc.data();
         data['booking_id'] = doc.id;
         return BookingModel_Febriyan.fromMap(data);
       }).toList();
+
       _isLoadingHistory = false;
       notifyListeners();
     } catch (e) {
@@ -82,42 +88,60 @@ class BookingProvider_Tio with ChangeNotifier {
     }
   }
 
-  Future<void> checkout_Tio() async {
-    try {
-      if (_selectedMovie == null) throw 'No movie selected';
-      if (_selectedSeats.isEmpty) throw 'No seats selected';
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw 'User not logged in';
+Future<void> checkout_Tio() async {
+  try {
+    if (_selectedMovie == null) throw 'No movie selected';
+    if (_selectedSeats.isEmpty) throw 'No seats selected';
 
-      String bookingId = 'BOOK_${DateTime.now().millisecondsSinceEpoch}';
-      Map<String, dynamic> bookingData = {
-        'booking_id': bookingId,
-        'user_id': user.uid,
-        'movie_title': _selectedMovie!.title,
-        'seats': _selectedSeats,
-        'total_price': _totalPrice,
-        'booking_date': Timestamp.now(),
-      };
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw 'User not logged in';
 
-      await FirebaseFirestore.instance
-          .collection('bookings')
-          .doc(bookingId)
-          .set(bookingData);
+    // Tambahkan dokumen baru, Firestore membuat ID otomatis
+    final docRef =
+        await FirebaseFirestore.instance.collection('bookings').add({
+      'user_id': user.uid,
+      'movie_title': _selectedMovie!.title,
+      'seats': _selectedSeats,
+      'total_price': _totalPrice,
+      'booking_date': Timestamp.now(),
+    });
 
-      final newBooking = BookingModel_Febriyan.fromMap(bookingData);
-      _bookingHistory.insert(0, newBooking);
-      _selectedSeats.clear();
-      _totalPrice = 0;
-      notifyListeners();
-    } catch (e) {
-      throw 'Checkout failed: $e';
-    }
+    // Tambahkan booking_id ke dokumen yang baru dibuat
+    await docRef.update({'booking_id': docRef.id});
+
+    // Tambahkan ke local history
+    final newBooking = BookingModel_Febriyan(
+      booking_id: docRef.id,
+      user_id: user.uid,
+      movie_title: _selectedMovie!.title,
+      seats: _selectedSeats,
+      total_price: _totalPrice,
+      booking_date: Timestamp.now(),
+    );
+
+    _bookingHistory.insert(0, newBooking);
+
+    _selectedSeats.clear();
+    _totalPrice = 0;
+    notifyListeners();
+
+  } catch (e) {
+    throw 'Checkout failed: $e';
   }
+}
 
+
+
+  // -------------------------------
+  // QR DATA
+  // -------------------------------
   String generateQRData_Tio(BookingModel_Febriyan booking) {
     return booking.booking_id;
   }
 
+  // -------------------------------
+  // RESET
+  // -------------------------------
   void resetAll_Tio() {
     _selectedSeats.clear();
     _selectedMovie = null;

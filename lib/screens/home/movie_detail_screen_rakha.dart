@@ -10,15 +10,34 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
   const MovieDetailScreen_Rakha({Key? key, required this.movie})
       : super(key: key);
 
+  void _bookTicket(BuildContext context) {
+    try {
+      Provider.of<BookingProvider_Tio>(context, listen: false)
+          .setSelectedMovie_Tio(movie);
+          
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SeatSelectionScreen_Anisa(),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 350,
-            floating: false,
-            pinned: true,
+            expandedHeight: 300,
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
                 tag: 'movie-${movie.movie_id}',
@@ -28,189 +47,65 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       color: Colors.grey[300],
-                      child: Center(
-                        child: Icon(
-                          Icons.movie,
-                          size: 100,
-                          color: Colors.grey[500],
-                        ),
-                      ),
+                      child: Icon(Icons.movie, size: 100, color: Colors.grey),
                     );
                   },
                 ),
               ),
-              title: Text(
-                movie.title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black.withOpacity(0.8),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-              ),
-              centerTitle: true,
             ),
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     movie.title,
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[900],
-                    ),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: 16),
                   Row(
                     children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.amber[50],
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.amber),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.star,
-                              color: Colors.amber[700],
-                              size: 18,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              movie.rating.toStringAsFixed(1),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.amber[900],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.blue),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.schedule,
-                              color: Colors.blue[700],
-                              size: 18,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              '${movie.duration} min',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue[900],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      Icon(Icons.star, color: Colors.amber),
+                      SizedBox(width: 4),
+                      Text(movie.rating.toStringAsFixed(1)),
+                      SizedBox(width: 16),
+                      Icon(Icons.schedule),
+                      SizedBox(width: 4),
+                      Text('${movie.duration} min'),
                     ],
                   ),
                   SizedBox(height: 16),
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green[200]!),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Base Price',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 14,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Rp ${movie.base_price}',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green[800],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    child: Text(
+                      'Rp ${movie.base_price}',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[800],
+                      ),
                     ),
                   ),
                   SizedBox(height: 20),
                   Text(
                     'About the Movie',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue[900],
                     ),
                   ),
                   SizedBox(height: 8),
                   Text(
                     'Experience the magic of cinema with "${movie.title}". '
-                    'This highly-rated film (${movie.rating}/5.0) offers ${movie.duration} minutes '
-                    'of unforgettable entertainment. Perfect for movie lovers of all ages.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      height: 1.6,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'Features',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[900],
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildFeatureChip_Rakha(Icons.hd, 'HD Quality'),
-                      _buildFeatureChip_Rakha(Icons.audiotrack, 'Dolby Audio'),
-                      _buildFeatureChip_Rakha(
-                          Icons.airline_seat_recline_normal, 'Comfort Seats'),
-                      _buildFeatureChip_Rakha(Icons.local_cafe, 'Snack Bar'),
-                      _buildFeatureChip_Rakha(
-                          Icons.wheelchair_pickup, 'Accessible'),
-                      _buildFeatureChip_Rakha(
-                          Icons.family_restroom, 'Family Friendly'),
-                    ],
+                    'This highly-rated film offers ${movie.duration} minutes '
+                    'of unforgettable entertainment.',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                   ),
                 ],
               ),
@@ -218,73 +113,13 @@ class MovieDetailScreen_Rakha extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: Container(
-        margin: EdgeInsets.symmetric(horizontal: 20),
-        width: double.infinity,
-        child: FloatingActionButton.extended(
-          onPressed: () {
-            _navigateToSeatSelection_Rakha(context);
-          },
-          icon: Icon(Icons.confirmation_number, color: Colors.white),
-          label: Text(
-            'BOOK TICKET NOW',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.blue,
-          elevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _bookTicket(context),
+        icon: Icon(Icons.confirmation_number),
+        label: Text('BOOK TICKET'),
+        backgroundColor: Colors.blue,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
-  }
-
-  Widget _buildFeatureChip_Rakha(IconData icon, String label) {
-    return Chip(
-      avatar: Icon(icon, size: 18, color: Colors.blue),
-      label: Text(
-        label,
-        style: TextStyle(fontSize: 12),
-      ),
-      backgroundColor: Colors.blue[50],
-      side: BorderSide(color: Colors.blue[100]!),
-    );
-  }
-
-  void _navigateToSeatSelection_Rakha(BuildContext context) {
-    try {
-      print("🎬 DEBUG: Button pressed for movie: ${movie.title}");
-
-      final bookingProvider =
-          Provider.of<BookingProvider_Tio>(context, listen: false);
-
-      bookingProvider.setSelectedMovie_Tio(movie);
-      bookingProvider.clearSeats_Tio();
-
-      print("🎬 DEBUG: Movie set to provider: ${movie.title}");
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SeatSelectionScreen_Anisa(),
-        ),
-      );
-
-      print("🎬 DEBUG: Navigation successful");
-    } catch (e) {
-      print("❌ ERROR in navigation: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error: ${e.toString()}"),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 }

@@ -63,7 +63,7 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
     // ignore: duplicate_ignore
     // ignore: unused_local_variable
     int taxAmount = hasLongTitleTax ? 2500 : 0;
-    
+
     return Card(
       margin: EdgeInsets.all(16),
       child: ListTile(
@@ -154,10 +154,11 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
                           String seatNumber =
                               '${rowLabels[rowIndex]}${colIndex + 1}';
                           bool isBooked = bookedSeats.contains(seatNumber);
-                          
+
                           return SeatItem_Anisa(
                             seatNumber: seatNumber,
-                            isSelected: provider.selectedSeats.contains(seatNumber),
+                            isSelected:
+                                provider.selectedSeats.contains(seatNumber),
                             isBooked: isBooked,
                             onTap: () {
                               if (!isBooked) {
@@ -241,7 +242,7 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Selected Seats', 
+                    Text('Selected Seats',
                         style: TextStyle(color: Colors.grey, fontSize: 14)),
                     SizedBox(height: 4),
                     Container(
@@ -257,7 +258,8 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color: Colors.blue[50],
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.blue[100]!),
+                                    border:
+                                        Border.all(color: Colors.blue[100]!),
                                   ),
                                   child: Text(seat,
                                       style: TextStyle(
@@ -275,7 +277,7 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('Total Price', 
+                  Text('Total Price',
                       style: TextStyle(color: Colors.grey, fontSize: 14)),
                   SizedBox(height: 4),
                   Text(
@@ -309,7 +311,7 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
                 children: [
                   Icon(Icons.confirmation_number, color: Colors.white),
                   SizedBox(width: 10),
-                  Text('CHECKOUT', 
+                  Text('CHECKOUT',
                       style: TextStyle(fontSize: 16, color: Colors.white)),
                 ],
               ),
@@ -351,7 +353,8 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
               Divider(),
               // Tampilkan breakdown harga sesuai spesifikasi
               if (provider.selectedMovie!.title.length > 10)
-                Text('• Long Title Tax: Rp 2,500 x ${provider.selectedSeats.length} seat(s)'),
+                Text(
+                    '• Long Title Tax: Rp 2,500 x ${provider.selectedSeats.length} seat(s)'),
               // Tampilkan discount untuk kursi genap
               _buildPriceBreakdown_Anisa(provider),
             ],
@@ -395,13 +398,11 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
 
   Widget _buildPriceBreakdown_Anisa(BookingProvider_Tio provider) {
     // Hitung jumlah kursi genap yang mendapat diskon
-    int evenSeatsCount = provider.selectedSeats
-        .where((seat) {
-          int seatNumber = int.tryParse(seat.substring(1)) ?? 0;
-          return seatNumber % 2 == 0;
-        })
-        .length;
-    
+    int evenSeatsCount = provider.selectedSeats.where((seat) {
+      int seatNumber = int.tryParse(seat.substring(1)) ?? 0;
+      return seatNumber % 2 == 0;
+    }).length;
+
     if (evenSeatsCount > 0) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,

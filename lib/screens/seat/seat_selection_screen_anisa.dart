@@ -38,7 +38,7 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Select Seats'),
+        title: Text('Pilih Kursi'),
         backgroundColor: Colors.blue,
         actions: [
           // Tombol refresh booked seats
@@ -53,11 +53,11 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
                 bookingProvider.loadBookedSeatsForMovie(movie.title);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Refreshing seat availability...'), duration: Duration(seconds: 2),
+                    content: Text('Memuat ulang status kursi...'), duration: Duration(seconds: 2),
                   ),
                 );
               },
-              tooltip: 'Refresh seat availability',
+              tooltip: 'Memuat ulang status kursi...',
             ),
         ],
       ),
@@ -91,14 +91,14 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
         title: Text(movie.title, style: TextStyle(fontWeight: FontWeight.bold), maxLines: 2),
         subtitle: Column( crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Base Price: Rp ${movie.base_price}'),
+            Text('Harga Normal: Rp ${movie.base_price}'),
             if (hasLongTitleTax)
-              Text('+ Long Title Tax: Rp 2.500', style: TextStyle(color: Colors.orange)),
-            Text('Duration: ${movie.duration} min'),
+              Text('+ Pajak: Rp.2500', style: TextStyle(color: Colors.orange)),
+            Text('Durasi: ${movie.duration} menit'),
             Text('Rating: ${movie.rating}/5.0'),
             SizedBox(height: 4),
             Text(
-              'Booked seats: $bookedSeatsCount/${rowLabels.length * seatsPerRow}',
+              'Terbooking: $bookedSeatsCount/${rowLabels.length * seatsPerRow}',
               style: TextStyle( fontSize: 12, color: bookedSeatsCount > 0 ? Colors.red : Colors.green, fontWeight: FontWeight.bold),
             ),
           ],
@@ -190,7 +190,7 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
           ),
           SizedBox(height: 8),
           Text(
-            'Red seats are already booked by other users',
+            'Kursi berwarna merah telah dipesan. Silakan pilih kursi yang tersedia.',
             style: TextStyle(fontSize: 12, color: Colors.grey),
             textAlign: TextAlign.center,
           ),
@@ -243,11 +243,11 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
     final shouldProceed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Confirm Booking'), content: SingleChildScrollView( child: Column( mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
+        title: Text('Konfirmasi Pemesanan'), content: SingleChildScrollView( child: Column( mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Movie: $movieTitle', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Film: $movieTitle', style: TextStyle(fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
-              Text('Seats: ${selectedSeats.join(", ")}'),
+              Text('Kursi: ${selectedSeats.join(", ")}'),
               SizedBox(height: 8),
               Text('Total: Rp $totalPrice'),
               SizedBox(height: 8),
@@ -255,15 +255,15 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
               if (movieTitle.length > 10)
                 Padding(
                   padding: EdgeInsets.only(bottom: 4),
-                  child: Text('• Long Title Tax: Rp 2,500 x ${selectedSeats.length} seat(s)'),
+                  child: Text('• + Pajak: Rp 2500 x ${selectedSeats.length} kursi'),
                 ),
               _buildPriceBreakdown_Anisa(selectedSeats),
             ],
           ),
         ),
         actions: [
-          TextButton( onPressed: () => Navigator.pop(context, false), child: Text('Cancel')),
-          ElevatedButton( onPressed: () => Navigator.pop(context, true), child: Text('Confirm & Pay')),
+          TextButton( onPressed: () => Navigator.pop(context, false), child: Text('Batal')),
+          ElevatedButton( onPressed: () => Navigator.pop(context, true), child: Text('Bayar Sekarang')),
         ],
       ),
     );
@@ -280,7 +280,7 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
     }).length;
 
     if (evenSeatsCount > 0) {
-      return Text('• Even Seat Discount (10%): $evenSeatsCount seat(s)');
+      return Text('• Diskon Kursi Genap (10%): $evenSeatsCount kursi');
     }
     return SizedBox();
   }
@@ -298,7 +298,7 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
       builder: (context) => AlertDialog( content: Column( mainAxisSize: MainAxisSize.min, children: [
             CircularProgressIndicator(),
             SizedBox(height: 20),
-            Text('Processing booking...\nPlease wait.', textAlign: TextAlign.center),
+            Text('Sedang memproses pemesanan...\nSilakan tunggu.', textAlign: TextAlign.center),
           ],
         ),
       ),
@@ -316,36 +316,17 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
         context: context, barrierDismissible: false,
         builder: (context) => AlertDialog( icon: Icon(Icons.check_circle, color: Colors.green, size: 60),
           title: Text(
-            'Booking Successful!',
+            'Pemesanan Sukses!',
             style: TextStyle( fontWeight: FontWeight.bold, color: Colors.green),
           ),
           content: SingleChildScrollView(
             child: Column( mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Movie: $movieTitle', style: TextStyle(fontWeight: FontWeight.bold)),
-                SizedBox(height: 8), Text('Seats: ${selectedSeats.join(", ")}'),
-                SizedBox(height: 8), Text('Total Paid: Rp $totalPrice'),
-                SizedBox(height: 8), Text('Booking ID: ${bookingId.substring(0, 8)}...', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text('Film: $movieTitle', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8), Text('Kursi: ${selectedSeats.join(", ")}'),
+                SizedBox(height: 8), Text('Total Pembayaran: Rp $totalPrice'),
                 SizedBox(height: 16),
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration( border: Border.all(color: Colors.blue), borderRadius: BorderRadius.circular(8)),
-                  child: Column(
-                    children: [
-                      Icon(Icons.qr_code, size: 40, color: Colors.blue),
-                      SizedBox(height: 8),
-                      Text('Show this QR Code at cinema', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      SizedBox(height: 8),
-                      Container( width: 120, height: 120, color: Colors.grey[200],
-                        child: Center(
-                          child: Text('QR CODE', style: TextStyle( fontWeight: FontWeight.bold, color: Colors.black54)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 SizedBox(height: 8),
-                Text( 'Note: Your selected seats are now marked as booked (red)', style: TextStyle(fontSize: 12, color: Colors.green)),
               ],
             ),
           ),
@@ -357,7 +338,7 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
                   provider.clearSeats_Tio();
                   Navigator.popUntil(context, (route) => route.isFirst);
                 },
-                child: Text('Back to Home'),
+                child: Text('Selesai'),
               ),
             ),
           ],
@@ -371,9 +352,9 @@ class SeatSelectionScreen_Anisa extends StatelessWidget {
       // Show error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Booking failed: ${e.toString().replaceFirst("Checkout failed: ", "")}'),
+          content: Text('Pemesanan Gagal: ${e.toString().replaceFirst("Transaksi gagal: ", "")}'),
           backgroundColor: Colors.red, duration: Duration(seconds: 4), action: SnackBarAction(
-            label: 'RETRY', onPressed: () {
+            label: 'COBA LAGI', onPressed: () {
               _processBooking_Anisa(context, provider, movieTitle, selectedSeats, totalPrice);
             },
           ),
@@ -418,7 +399,7 @@ class __CheckoutSectionState extends State<_CheckoutSection> {
               Expanded(
                 child: Column( crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Selected Seats', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                    Text('Kursi Terpilih', style: TextStyle(color: Colors.grey, fontSize: 14)),
                     SizedBox(height: 4),
                     Container(
                       height: 40, child: provider.selectedSeats.isNotEmpty
@@ -434,7 +415,7 @@ class __CheckoutSectionState extends State<_CheckoutSection> {
                                 );
                               }).toList(),
                             )
-                          : Text('No seats selected', style: TextStyle(fontStyle: FontStyle.italic)),
+                          : Text('Tidak ada kursi yang dipilih', style: TextStyle(fontStyle: FontStyle.italic)),
                     ),
                   ],
                 ),
@@ -443,7 +424,7 @@ class __CheckoutSectionState extends State<_CheckoutSection> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('Total Price',
+                  Text('Total Pembayaran',
                       style: TextStyle(color: Colors.grey, fontSize: 14)),
                   SizedBox(height: 4),
                   Text(
@@ -489,7 +470,7 @@ class __CheckoutSectionState extends State<_CheckoutSection> {
                       children: [
                         SizedBox( width: 20, height: 20, child: CircularProgressIndicator( strokeWidth: 2, color: Colors.white)),
                         SizedBox(width: 10),
-                        Text('PROCESSING...', style: TextStyle(fontSize: 16, color: Colors.white)),
+                        Text('MEMPROSES...', style: TextStyle(fontSize: 16, color: Colors.white)),
                       ],
                     )
                   : Row(
@@ -497,7 +478,7 @@ class __CheckoutSectionState extends State<_CheckoutSection> {
                       children: [
                         Icon(Icons.confirmation_number, color: Colors.white),
                         SizedBox(width: 10),
-                        Text('CHECKOUT',
+                        Text('PESAN SEKARANG',
                             style: TextStyle(fontSize: 16, color: Colors.white)),
                       ],
                     ),
